@@ -1,6 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react';
 import * as ort from 'onnxruntime-web';
 import { Box, Button, Typography, Paper } from '@mui/material';
+import { ref, uploadBytes } from 'firebase/storage';
+import { storage } from './firebase';
 
 interface Prediction {
   digit: number;
@@ -127,6 +129,22 @@ const App: React.FC = () => {
     }
   };
 
+  const saveImage = async () => {
+    if (!canvasRef.current) return;
+
+    try {
+      const blob = await new Promise<Blob>((resolve) =>
+        canvasRef.current!.toBlob(blob => resolve(blob!), 'image/png')
+      );
+
+      const storageRef = ref(storage, `storage/9_${Date.now()}.png`);
+      await uploadBytes(storageRef, blob);
+      console.log('Image saved successfully');
+    } catch (error) {
+      console.error('Error saving image:', error);
+    }
+  };
+
   // Helper function for softmax
   const softmax = (arr: number[]): number[] => {
     const max = Math.max(...arr);
@@ -159,6 +177,13 @@ const App: React.FC = () => {
           </Button>
           <Button variant="outlined" onClick={clearCanvas}>
             Clear
+          </Button>
+          <Button
+            variant="contained"
+            onClick={saveImage}
+            sx = {{mr : 1}}
+            color="secondary">
+            Save as 9
           </Button>
         </Box>
       </Paper>
