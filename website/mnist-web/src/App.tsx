@@ -131,7 +131,7 @@ const App: React.FC = () => {
   const saveImageToGitHub = async (imageDataUrl: string, fileName: string) => {
     const token = process.env.REACT_APP_GITHUB_TOKEN;
     const repo = 'justadude12/mnistdeploytest';
-    const path = `website/mnist-web/public/newimages/${fileName}.png`;
+    const path = `images/${fileName}.png`;
     const content = imageDataUrl.split(',')[1];
 
     try {
@@ -158,7 +158,7 @@ const App: React.FC = () => {
     try {
       const dataUrl = canvasRef.current.toDataURL('image/png');
       const timestamp = Date.now();
-      const fileName = `digit_9_${timestamp}.png`;
+      const fileName = `digit_9_${timestamp}`;
   
       await saveImageToGitHub(dataUrl, fileName);
     } catch (error) {
