@@ -130,8 +130,8 @@ const App: React.FC = () => {
 
   const saveImageToGitHub = async (imageDataUrl: string, fileName: string) => {
     const token = process.env.REACT_APP_GITHUB_TOKEN;
-    const repo = 'justadude12/mnistdeploytest';
-    const path = `images/${fileName}.png`;
+    const repo = 'justadude12/mnist-images';
+    const path = `${fileName}.png`;
     const content = imageDataUrl.split(',')[1];
 
     try {
