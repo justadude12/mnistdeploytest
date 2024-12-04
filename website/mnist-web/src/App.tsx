@@ -13,6 +13,8 @@ const App: React.FC = () => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [session, setSession] = useState<ort.InferenceSession | null>(null);
+  const [uploadCount, setUploadCount] = useState<number>(0);
+  const [saveMessage, setSaveMessage] = useState<string>('');
 
   useEffect(() => {
     const loadModel = async () => {
@@ -146,8 +148,11 @@ const App: React.FC = () => {
          },
         }
       );
+      setUploadCount(prev => prev + 1);
+      setSaveMessage(`Successfully uploaded image ${uploadCount + 1}!`);
       console.log('Image saved to GitHub:', response.data.content.html_url);
     } catch (error) {
+      setSaveMessage('Error uploading image');
       console.error('Error saving image to GitHub:', error);
     }
   };
@@ -206,6 +211,13 @@ const App: React.FC = () => {
             color="secondary">
             Save as 9
           </Button>
+          {saveMessage && (
+            <Typography color={saveMessage.includes('Error') ? 'error' : 'success'}
+              sx={{ mt: 1 }}
+            >
+              {saveMessage}
+            </Typography>
+          )}
         </Box>
       </Paper>
 
