@@ -1,8 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import * as ort from 'onnxruntime-web';
 import { Box, Button, Typography, Paper } from '@mui/material';
-import { ref, uploadBytes } from 'firebase/storage';
-import { storage } from './firebase';
+import axios from 'axios';
 
 interface Prediction {
   digit: number;
@@ -129,17 +128,39 @@ const App: React.FC = () => {
     }
   };
 
-  const saveImage = async () => {
-    if (!canvasRef.current) return;
+  const saveImageToGitHub = async (imageDataUrl: string, fileName: string) => {
+    const token = process.env.REACT_APP_GITHUB_TOKEN;
+    const repo = 'justadude12/mnistdeploytest';
+    const path = `website/mnist-web/public/newimages/${fileName}.png`;
+    const content = imageDataUrl.split(',')[1];
 
     try {
-      const blob = await new Promise<Blob>((resolve) =>
-        canvasRef.current!.toBlob(blob => resolve(blob!), 'image/png')
+      const response = await axios.put(
+        `https://api.github.com/repos/${repo}/contents/${path}`,
+        {
+          message: `Add image ${fileName}`,
+          content: content,
+        },
+        { headers: { Authorization: `token ${token}`,
+          Accept: 'application/vnd.github.v3+json',
+         },
+        }
       );
+      console.log('Image saved to GitHub:', response.data.content.html_url);
+    } catch (error) {
+      console.error('Error saving image to GitHub:', error);
+    }
+  };
 
-      const storageRef = ref(storage, `storage/9_${Date.now()}.png`);
-      await uploadBytes(storageRef, blob);
-      console.log('Image saved successfully');
+  const saveImage = async () => {
+    if (!canvasRef.current) return;
+  
+    try {
+      const dataUrl = canvasRef.current.toDataURL('image/png');
+      const timestamp = Date.now();
+      const fileName = `digit_9_${timestamp}.png`;
+  
+      await saveImageToGitHub(dataUrl, fileName);
     } catch (error) {
       console.error('Error saving image:', error);
     }
