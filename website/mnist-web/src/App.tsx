@@ -15,6 +15,8 @@ const App: React.FC = () => {
   const [session, setSession] = useState<ort.InferenceSession | null>(null);
   const [uploadCount, setUploadCount] = useState<number>(0);
   const [saveMessage, setSaveMessage] = useState<string>('');
+  const [canvasModified, setCanvasModified] = useState(false);
+  const [currentDrawingSaved, setCurrentDrawingSaved] = useState(false);
 
   useEffect(() => {
     const loadModel = async () => {
@@ -53,9 +55,49 @@ const App: React.FC = () => {
         e.clientX - canvas.offsetLeft,
         e.clientY - canvas.offsetTop
       );
+      setCanvasModified(true);
       ctx.stroke();
     }
   };
+
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDrawing(true);
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (ctx && canvas) {
+      const touch = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      ctx.beginPath();
+      ctx.moveTo(
+        touch.clientX - rect.left,
+        touch.clientY - rect.top
+      );
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDrawing) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (ctx && canvas) {
+      const touch = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      ctx.lineWidth = 13;
+      ctx.lineCap = 'round';
+      ctx.lineTo(
+        touch.clientX - rect.left,
+        touch.clientY - rect.top
+      );
+      setCanvasModified(true);
+      ctx.stroke();
+    }
+  };
+
 
   const stopDrawing = () => {
     setIsDrawing(false);
@@ -67,6 +109,8 @@ const App: React.FC = () => {
     if (ctx && canvas) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       setPredictions([]);
+      setCanvasModified(false);
+      setCurrentDrawingSaved(false);
     }
   };
 
@@ -160,12 +204,22 @@ const App: React.FC = () => {
   const saveImage = async () => {
     if (!canvasRef.current) return;
   
+    if (!canvasModified) {
+      setSaveMessage('Please draw a digit before saving');
+      return;
+    }
+    if (currentDrawingSaved) {
+      setSaveMessage('This drawing has already been saved');
+      return;
+    }
+    
     try {
       const dataUrl = canvasRef.current.toDataURL('image/png');
       const timestamp = Date.now();
       const fileName = `digit_9_${timestamp}`;
   
       await saveImageToGitHub(dataUrl, fileName);
+      setCurrentDrawingSaved(true);
     } catch (error) {
       console.error('Error saving image:', error);
     }
@@ -186,15 +240,29 @@ const App: React.FC = () => {
       </Typography>
       
       <Paper elevation={3} sx={{ p: 2, mb: 2 }}>
+      <Typography variant="body1" sx={{ mb: 2 }}>
+        We are collecting handwritten digit '9' samples to enhance our dataset. 
+        Please help us by drawing your version of the number '9' and clicking 
+        the "Save as 9" button. Your contribution helps improve our model's accuracy!
+      </Typography>
         <canvas
           ref={canvasRef}
           width={400}
           height={400}
-          style={{ border: '1px solid black' }}
+          style={{ 
+            border: '1px solid black',
+            touchAction: 'none',
+            WebkitTouchCallout: 'none',
+            WebkitUserSelect: 'none',
+            userSelect: 'none'
+          }}
           onMouseDown={startDrawing}
           onMouseMove={draw}
           onMouseUp={stopDrawing}
           onMouseOut={stopDrawing}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={stopDrawing}
         />
         
         <Box sx={{ mt: 2 }}>
